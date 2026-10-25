@@ -1,0 +1,64 @@
+source:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**'
+          - 'app/**'
+          - 'lib/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.*'
+          - '**/*.spec.*'
+          - '**/*_test.*'
+          - 'test/**'
+          - 'tests/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+assets:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'public/**'
+          - 'assets/**'
+          - 'images/**'
+          - 'docs/images/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - 'pnpm-lock.yaml'
+          - 'yarn.lock'
+          - 'requirements*.txt'
+          - 'pyproject.toml'
+          - 'poetry.lock'
+          - 'go.mod'
+          - 'go.sum'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
+          - '.github/dependabot.yml'
+
+deployment:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'Dockerfile*'
+          - 'docker-compose*.yml'
+          - 'docker-compose*.yaml'
+          - 'deploy/**'
+          - '.env.example'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/labeler.yml'
+          - '.github/dependabot.yml'
+          - '.claude/**'
+          - 'scripts/workflow/**'
+          - '.gitattributes'
