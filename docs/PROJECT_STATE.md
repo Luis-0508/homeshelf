@@ -1,37 +1,50 @@
-<!-- TEMPLATE: NOT INITIALIZED. Replace this file when the project is set up
-(Claude Code: the `init-project` skill, which also creates the Kanban board;
-others: fill in the sections below by hand and delete this comment). Keep it
-under about 80 lines. -->
-
 # Project state
 
-Narrative snapshot of where PROJECT_NAME stands. **The repository is
+Narrative snapshot of where HomeShelf stands. **The repository is
 authoritative:** if git, the code, the task board or GitHub disagree with this
 file, trust them and correct this file.
 
-- Last updated: YYYY-MM-DD
-- Verified against: `main` at `<commit>`
+- Last updated: 2026-10-25
+- Verified against: `main` at `2a3b533` (template) plus the initial import in
+  the `chore/init-project` pull request
 
 ## What exists
 
-- Capabilities that work today, one line each. No planned features here.
+- Tizen 4.0 web app (`app/`, version 0.2.4), verified on a UE43NU7099:
+  four pinned apps by Tizen ID, ~0.3 s start, OK on keyup after a seen
+  keydown, focus restored after every cold start, colour-key direct launch,
+  Back exits.
+- Live TV/HDMI view and input tiles in the code but off (`SHOW_INPUTS = false`).
+- Smart Hub Preview `PAYLOAD` handling (pinned IDs only); the preview itself
+  never appeared on the reference TV, so no `use.preview` metadata is set.
+- Tools: `tv_inspect.py` (DevTools evaluate/console), `tv_control.py`
+  (remote keys, app list/status/launch), `discover.py` (read-only discovery).
+- Measured platform limits (`PLATFORM.md`) and the Home-replacement study
+  (`HOME_REPLACEMENT.md`).
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for how it fits together and
 [DECISIONS/](DECISIONS/README.md) for why.
 
 ## Active work
 
-- Tickets or branches in progress and their PRs, or "None".
+- Initial import pull request (`chore/init-project`), open for review.
 
 ## Blockers
 
-- What blocks progress, what was tried, what is needed. Or "None".
+- None for the code. Making the repository public waits for the maintainer's
+  merge and a real screenshot (the TV's DevTools cannot capture the page).
 
 ## Next priorities
 
-1. The next planned work, highest priority first. The task board order wins
-   when one exists.
+1. No board tickets yet. Candidate work, once the maintainer plans it:
+   real photo of the TV screen for the README; record the result of the
+   *Autorun Last App* test from `HOME_REPLACEMENT.md`.
 
 ## Known limitations
 
-- Honest gaps, unverified assumptions and technical debt.
+- Only one TV model verified; package ID `HmShlf0001` and `PINNED` are tuned
+  to it.
+- No automated behaviour tests: CI checks syntax only; behaviour is verified
+  on the device.
+- Replacing the Home button is not possible with documented means on Tizen 4.0
+  (see `HOME_REPLACEMENT.md`).

@@ -1,99 +1,92 @@
 <div align="center">
 
-<!-- Add a real project mark/logo when one exists.
-Use a repository-owned asset and keep it compact, similar to 72–96 px.
+# HomeShelf
 
-<img src="docs/images/project-mark.svg" alt="" width="88" height="88">
--->
+**A fast, remote-first app shelf for 2018 Samsung Tizen 4.0 TVs — plus measured notes on what such a TV really allows.**
 
-# PROJECT_NAME
-
-**One concise sentence that explains what the project does and why it exists.**
-
-<!-- Add only badges that describe the real project.
-Recommended order: CI, primary framework/runtime, language, notable core technology, license.
-Do not add decorative or misleading badges.
-
-Example:
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![CI](https://github.com/Luis-0508/homeshelf/actions/workflows/ci.yml/badge.svg)](https://github.com/Luis-0508/homeshelf/actions/workflows/ci.yml)
+[![Tizen](https://img.shields.io/badge/Tizen-4.0%20TV-1428a0)](https://developer.samsung.com/smarttv/develop)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES5-f7df1e?logo=javascript&logoColor=black)](app/index.html)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-4d6b2f)](LICENSE)
--->
 
-<!-- Add one strong real hero screenshot/render as soon as the product has a useful visual.
-
-<img src="docs/images/hero.webp" alt="PROJECT_NAME main interface" width="900">
--->
+<!-- No screenshot yet: the TV's DevTools endpoint cannot capture the page, and
+photos of the screen are still to be taken. Add a real one as docs/images/hero.webp. -->
 
 </div>
 
 ## Overview
 
-Describe the project in a few short paragraphs. Focus on the problem, the current solution, and who the project is useful for.
+HomeShelf is a small Tizen web app that opens to a clock and a row of your
+favourite streaming apps. It runs as an ordinary app installed in Developer
+Mode; it does **not** replace Samsung's Home button (and on this TV generation
+nothing documented can — see [docs/HOME_REPLACEMENT.md](docs/HOME_REPLACEMENT.md)).
 
-Then explain what makes the project technically or conceptually interesting. Prefer concrete capabilities over marketing language.
+It was built and verified on a Samsung UE43NU7099 (2018, Tizen 4.0, basic
+model group). Along the way the project measured the platform's real limits —
+app lifecycle, key handling, app IDs, TV window, Smart Hub Preview, SDB access
+— and recorded them in [docs/PLATFORM.md](docs/PLATFORM.md). Those notes are
+probably the most useful part for anyone building for these TVs.
 
 ## Features
 
-**Feature one.** Explain the capability and why it matters.
+**Unambiguous app pinning.** Apps are pinned by Tizen app ID, because names
+from `getAppsInfo()` are duplicated and differ from Smart Hub's. Pinned apps
+load with `getAppInfo()` in about 0.3 s instead of ~3 s for the full list.
 
-**Feature two.** Explain the capability and why it matters.
+**Safe OK handling.** OK launches on `keyup`, and only after HomeShelf saw the
+matching `keydown`, so the press that opened HomeShelf cannot start a tile.
 
-**Feature three.** Explain the capability and why it matters.
+**Remembers your place.** The launcher is terminated whenever it starts an app
+on this TV, so the focused tile is stored and restored on every cold start.
 
-## Screenshots
+**Colour-key direct launch.** Red, green, yellow and blue start the first four
+pinned apps without moving focus.
 
-Add 2–4 real screenshots or renders once useful visuals exist. Prefer a compact gallery instead of a long vertical list.
-
-<!-- Recommended gallery layout:
-
-<table>
-  <tr>
-    <td width="50%"><img src="docs/images/screenshot-1.webp" alt="Describe screenshot one"></td>
-    <td width="50%"><img src="docs/images/screenshot-2.webp" alt="Describe screenshot two"></td>
-  </tr>
-  <tr>
-    <td><b>View one.</b> One concise explanation.</td>
-    <td><b>View two.</b> One concise explanation.</td>
-  </tr>
-</table>
-
--->
+**On-device tooling.** [`tools/tv_inspect.py`](tools/tv_inspect.py) evaluates
+JavaScript inside the running app over the DevTools protocol;
+[`tools/tv_control.py`](tools/tv_control.py) sends remote keys and queries apps
+through Samsung's local network API; [`tools/discover.py`](tools/discover.py)
+finds the TV read-only.
 
 ## Quick start
 
 ```bash
-# Replace with the real setup commands.
-git clone REPOSITORY_URL
-cd PROJECT_DIRECTORY
+git clone https://github.com/Luis-0508/homeshelf.git
+cd homeshelf
+python -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
 ```
 
-Document the shortest reliable path to a working local environment.
+Then follow [docs/INSTALL.md](docs/INSTALL.md): Developer Mode, SDB connection,
+Samsung certificate, `tizen package` and `tizen install`.
 
 ## Development
 
-Document the normal development commands.
-
 ```bash
-# Examples only — replace or remove.
-# npm ci
-# npm run dev
-# npm test
-# npm run build
+tizen package -t wgt -s <certificate-profile> -- app
+tizen install -n HomeShelf.wgt -s <tv-ip>:26101 -- app
+python -I tools/tv_inspect.py --port <port> "window.__homeshelfLog"
 ```
+
+The web engine is Chromium M56: write ES5 and plain CSS. CI checks the Python
+tools and the app script's syntax; app behaviour is verified on a real TV.
 
 ## Architecture
 
-Keep this section compact. Explain the major boundaries and link to [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the details.
-
 ```text
-src/
-  ...
+app/     Tizen web app (config.xml, index.html, icon.png)
+tools/   Python helpers for SDB/DevTools inspection and remote control
+docs/    Platform measurements, Home-replacement study, install guide
 ```
+
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Project status
 
-State honestly what works today, what is experimental, and what is not implemented yet.
+Works today on the reference TV: pinned tiles, focus restore, colour keys,
+Back to exit. Present but switched off (`SHOW_INPUTS = false`): live TV/HDMI
+picture and input tiles, unverified with a real signal. Not possible on this
+TV with documented means: replacing the Home button, background services,
+Smart Hub Preview tiles. Other models are untested.
 
 ## Contributing
 
@@ -107,4 +100,7 @@ Please do not report security-sensitive issues publicly. See [SECURITY.md](SECUR
 
 ## License
 
-Choose and add an appropriate open-source license before making the repository public.
+[GNU Affero General Public License v3.0](LICENSE).
+
+Samsung, Tizen and the app names shown in HomeShelf are trademarks of their
+respective owners. This project is not affiliated with Samsung.

@@ -25,6 +25,19 @@ coverage/
 .tmp/
 temp/
 
+# Python
+.venv/
+__pycache__/
+
+# TV pairing token written by tools/tv_control.py (private)
+tools/tv-token.txt
+
+# Tizen packaging output: signed, device-bound, never committed
+*.wgt
+.manifest.tmp
+author-signature.xml
+signature*.xml
+
 # Claude Code personal files (shared settings in .claude/settings.json are committed)
 CLAUDE.local.md
 .claude/settings.local.json

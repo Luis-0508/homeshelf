@@ -14,3 +14,13 @@ updates:
     open-pull-requests-limit: 100
     commit-message:
       prefix: ci
+
+  - package-ecosystem: pip
+    directory: /tools
+    schedule:
+      interval: cron
+      cronjob: "0 6 * * *"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 100
+    commit-message:
+      prefix: deps

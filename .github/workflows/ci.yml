@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: App and tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Check app script syntax
+        run: node scripts/check-app.mjs app/index.html
+
+      - name: Check config.xml is well-formed
+        run: python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/config.xml')"
+
+      - name: Byte-compile Python tools
+        run: python3 -m py_compile tools/*.py
