@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>HomeShelf</title>
+<style>
+  /* Plain CSS only: the 2018 web engine is Chromium M56. */
+  /* The TV picture (tizen.tvwindow) is drawn behind the page, so the page is
+     transparent and #live paints the dark background around itself with a
+     huge box-shadow, leaving a see-through hole where the picture is. */
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden;
+    background: transparent; color: #f2f2f5; font-family: "SamsungOne", Arial, sans-serif; }
+  #top { height: 420px; padding: 80px 120px 0; box-sizing: border-box; }
+  #clock { font-size: 120px; font-weight: 300; }
+  #date { font-size: 36px; opacity: .7; }
+  #grid { padding: 40px 120px; }
+  .tile { display: inline-block; width: 300px; height: 170px; margin: 0 28px 40px 0;
+    border-radius: 18px; background: #1c1d24; vertical-align: top; position: relative;
+    transition: transform .15s; overflow: hidden; }
+  .tile img { width: 100%; height: 100%; object-fit: cover; }
+  .tile span { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px;
+    font-size: 26px; background: rgba(0,0,0,.55); }
+  .tile.focus { transform: scale(1.08); box-shadow: 0 0 0 5px #fff; }
+  #msg { padding: 0 120px; font-size: 28px; opacity: .7; }
+  /* tizen.tvwindow draws the live picture over this box (same coordinates as LIVE_RECT). */
+  #live { position: absolute; z-index: -1; left: 1160px; top: 60px; width: 640px; height: 360px;
+    border-radius: 12px; background: transparent; box-shadow: 0 0 0 3000px #0b0b0f; }
+  /* No live picture: collapse the hole, the shadow then covers the whole page. */
+  #live.off { width: 0; height: 0; }
+  #liveLabel { position: absolute; left: 1160px; top: 430px; width: 640px;
+    font-size: 26px; opacity: .7; text-align: right; }
+  .tile.source { background: #23324a; }
+  .tile.source b { position: absolute; left: 0; right: 0; top: 40px; text-align: center;
+    font-size: 44px; font-weight: 400; }
+  #keys { position: absolute; left: 120px; bottom: 50px; font-size: 26px; opacity: .8; }
+  #keys i { display: inline-block; width: 22px; height: 22px; border-radius: 50%;
+    margin: 0 10px 0 36px; vertical-align: -3px; }
+</style>
+</head>
+<body>
+<div id="top"><div id="clock"></div><div id="date"></div></div>
+<div id="live" class="off"></div><div id="liveLabel"></div>
+<div id="grid"></div>
+<div id="msg"></div>
+<div id="keys"></div>
+<script>
+(function () {
+  "use strict";
+  // Pinned order by Tizen app ID. Not by name: on this TV several entries share
+  // a name ("Netflix" x3, "Apple TV" x2, "YouTube" and the internal Cobalt
+  // "Youtube"), and getAppsInfo() names differ from the Smart Hub names.
+  // These are the IDs Smart Hub itself starts (matched via `tv_control.py status`
+  // against the store IDs), not the internal player apps they hand over to.
+  // Empty = show all launchable apps alphabetically.
+  var PINNED = [
+    "9Ur5IzDKqV.TizenYouTube",  // YouTube (store 111299001912)
+    "cg2m3QSB89.7tv",           // Joyn (store 3201502001386)
+    "RN1MCdNq8t.Netflix",       // Netflix (store 11101200001)
+    "MCmYXNxgcu.DisneyPlus"     // Disney+ (store 3201901017640)
+  ];
+  // Without pins: hide services, keyboards and firmware-internal apps.
+  var HIDDEN_PREFIXES = ["org.tizen.", "com.samsung.tv.", "org.volt.", "ise-"];
+  var SHOWN_INTERNAL = ["org.tizen.browser", "com.samsung.tv.gallery",
+    "com.samsung.tv.aria-video", "com.samsung.tv.UniversalBrowse"];
+  var PER_ROW = 5;
+  var FOCUS_KEY = "homeshelf.focusAppId";
+  // Colour keys start PINNED[0..3] directly (keyCodes 403-406 on this TV).
+  var COLOR_KEYS = [
+    { name: "ColorF0Red", code: 403, color: "#e53935" },
+    { name: "ColorF1Green", code: 404, color: "#43a047" },
+    { name: "ColorF2Yellow", code: 405, color: "#fdd835" },
+    { name: "ColorF3Blue", code: 406, color: "#1e88e5" }
+  ];
+  var LIVE_RECT = ["1160px", "60px", "640px", "360px"];
+  // The tuner input ("TV") is hidden: this TV has no antenna/cable, so its
+  // picture is black (measured: 720x576, aspect UNKNOWN). Set to true once
+  // there is reception; HDMI inputs are always offered when connected.
+  var SHOW_TUNER = false;
+  // Live picture and input tiles as a whole. Off: neither tuner nor HDMI is in
+  // use on this TV, and the last input (HDMI 1) would otherwise show as a
+  // black box on every start. Set to true to bring them back.
+  var SHOW_INPUTS = false;
+  var apps = [];
+  var sources = [];
+  var tiles = [];
+  var focus = 0;
+  // OK launches on keyup, and only after this page saw the matching keydown:
+  // the OK press that opened HomeShelf (keydown in Smart Hub) must not start
+  // the focused tile when its keyup or auto-repeat lands here.
+  var enterArmed = false;
+  // Diagnostics for the remote inspector (tools/tv_inspect.py "__homeshelfLog").
+  var log = window.__homeshelfLog = [];
+  var t0 = Date.now();
+
+  function note(text) {
+    log.push((Date.now() - t0) + "ms " + text);
+    if (log.length > 100) log.shift();
+  }
+
+  function stored(value) {
+    try {
+      if (value === undefined) return localStorage.getItem(FOCUS_KEY);
+      localStorage.setItem(FOCUS_KEY, value);
+    } catch (e) { /* storage unavailable: focus starts at the first tile */ }
+    return null;
+  }
+
+  function tick() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    document.getElementById("clock").textContent = p(d.getHours()) + ":" + p(d.getMinutes());
+    document.getElementById("date").textContent = d.toLocaleDateString("de-DE",
+      { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  function sourceName(s) {
+    return s.type === "TV" ? "Fernsehen" : s.type + " " + s.number;
+  }
+
+  // Apps first, then one tile per connected input (TV, HDMI …).
+  function render() {
+    var grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    var items = apps.concat(sources.map(function (s) {
+      return { id: "source:" + s.type + s.number, name: sourceName(s), source: s };
+    }));
+    tiles = items.map(function (app) {
+      var el = document.createElement("div");
+      el.className = "tile";
+      if (app.source) {
+        el.source = app.source;
+        var big = document.createElement("b");
+        big.textContent = app.source.type === "TV" ? "TV" : app.source.type + app.source.number;
+        el.appendChild(big);
+      } else if (app.iconPath) {
+        var img = document.createElement("img");
+        img.src = app.iconPath;
+        el.appendChild(img);
+      }
+      var label = document.createElement("span");
+      label.textContent = app.name;
+      el.appendChild(label);
+      el.appId = app.id;
+      grid.appendChild(el);
+      return el;
+    });
+    // Keep the tile the user was on; HomeShelf is restarted after every app,
+    // and setFocus() stores each move.
+    var idx = tiles.map(function (t) { return t.appId; }).indexOf(stored());
+    setFocus(idx < 0 ? 0 : idx);
+  }
+
+  function setFocus(i) {
+    if (!tiles.length) return;
+    focus = Math.max(0, Math.min(tiles.length - 1, i));
+    tiles.forEach(function (t, n) {
+      t.className = "tile" + (t.source ? " source" : "") + (n === focus ? " focus" : "");
+    });
+    stored(tiles[focus].appId);
+  }
+
+  function launch() {
+    var t = tiles[focus];
+    if (!t) return;
+    if (t.source) watch(t.source);
+    else launchId(t.appId);
+  }
+
+  // Switch the TV to this input, then leave HomeShelf so it fills the screen.
+  function watch(src) {
+    note("watch " + src.type + src.number);
+    var cur = tizen.tvwindow.getSource();
+    if (cur && cur.type === src.type && cur.number === src.number) {
+      tizen.application.getCurrentApplication().exit();
+      return;
+    }
+    tizen.tvwindow.setSource(src, function () {
+      note("source set " + src.type + src.number);
+      tizen.application.getCurrentApplication().exit();
+    }, function (e) {
+      note("setSource failed: " + e.message);
+      document.getElementById("msg").textContent = "Quelle nicht umschaltbar: " + e.message;
+    });
+  }
+
+  // Live picture of the current input in the header. The TV keeps whatever
+  // source it had; HomeShelf only shows it.
+  function offered(s) {
+    return s.type !== "TV" || SHOW_TUNER;
+  }
+
+  function showLive() {
+    var live = document.getElementById("live");
+    var label = document.getElementById("liveLabel");
+    function off() { live.className = "off"; label.textContent = ""; }
+    try {
+      var cur = tizen.tvwindow.getSource();
+      if (!cur || !offered(cur)) { note("live off, source " + (cur && cur.type)); off(); return; }
+      tizen.tvwindow.show(function (rect) {
+        note("tvwindow " + rect.join(","));
+        live.className = "";
+        label.textContent = "Live: " + sourceName(cur);
+      }, function (e) { note("tvwindow failed: " + e.message); off(); }, LIVE_RECT, "MAIN");
+    } catch (e) {
+      note("tvwindow unavailable: " + e.message);
+      off();
+    }
+  }
+
+  function loadSources() {
+    try {
+      tizen.systeminfo.getPropertyValue("VIDEOSOURCE", function (v) {
+        // "connected" is unreliable here: with a device switched on, HDMI 1
+        // was listed as disconnected while it was the current source
+        // (measured). So the current source always gets a tile as well.
+        var list = (v.connected || []).slice();
+        var cur = tizen.tvwindow.getSource();
+        if (cur && !list.some(function (s) { return s.type === cur.type && s.number === cur.number; })) {
+          list.push(cur);
+        }
+        sources = list.filter(offered);
+        note("sources " + sources.map(function (s) { return s.type + s.number; }).join(", "));
+        render();
+      }, function (e) { note("VIDEOSOURCE failed: " + e.message); });
+    } catch (e) { note("VIDEOSOURCE unavailable: " + e.message); }
+  }
+
+  function setupColorKeys() {
+    var hint = document.getElementById("keys");
+    hint.innerHTML = "";
+    try {
+      tizen.tvinputdevice.registerKeyBatch(COLOR_KEYS.map(function (k) { return k.name; }));
+    } catch (e) { note("registerKeyBatch failed: " + e.message); return; }
+    COLOR_KEYS.forEach(function (k, i) {
+      var app = apps.filter(function (a) { return a.id === PINNED[i]; })[0];
+      if (!app) return;
+      var dot = document.createElement("i");
+      dot.style.background = k.color;
+      hint.appendChild(dot);
+      hint.appendChild(document.createTextNode(app.name));
+    });
+  }
+
+  function launchId(id) {
+    note("launch " + id);
+    tizen.application.launch(id, null, function (e) {
+      note("launch failed " + id + ": " + e.message);
+      document.getElementById("msg").textContent = "Start fehlgeschlagen: " + e.message;
+    });
+  }
+
+  // A Smart Hub Preview tile click arrives as app control data "PAYLOAD":
+  // '{"values":"<action_data>"}', with action_data '{"appId":"..."}' from the
+  // preview JSON (see docs/PLATFORM.md). That JSON comes over the network, so
+  // only pinned IDs are accepted.
+  function previewTarget() {
+    try {
+      var req = tizen.application.getCurrentApplication().getRequestedAppControl();
+      var data = req && req.appControl.data || [];
+      for (var i = 0; i < data.length; i++) {
+        if (data[i].key !== "PAYLOAD") continue;
+        var id = JSON.parse(JSON.parse(data[i].value[0]).values).appId;
+        note("preview payload " + id);
+        return PINNED.indexOf(id) >= 0 ? id : null;
+      }
+    } catch (e) { note("preview payload unreadable: " + e.message); }
+    return null;
+  }
+
+  function handleAppControl() {
+    var id = previewTarget();
+    if (id) launchId(id);
+  }
+
+  function launchable(a, own) {
+    if (!a.show || a.id === own || !a.iconPath) return false;
+    if ((a.categories || []).some(function (c) { return /service|ime/.test(c); })) return false;
+    if (SHOWN_INTERNAL.indexOf(a.id) >= 0) return true;
+    return !HIDDEN_PREFIXES.some(function (p) { return a.id.indexOf(p) === 0; });
+  }
+
+  function load() {
+    var msg = document.getElementById("msg");
+    if (typeof tizen === "undefined") {
+      msg.textContent = "Tizen-API nicht verfügbar (Browser-Vorschau).";
+      return;
+    }
+    if (PINNED.length) {
+      // getAppInfo() per ID is synchronous and immediate; getAppsInfo() takes
+      // about 3 s for the ~200 entries on this TV, and keys pressed meanwhile
+      // would be lost.
+      var pinned = [];
+      PINNED.forEach(function (id) {
+        try { pinned.push(tizen.application.getAppInfo(id)); }
+        catch (e) { note("pinned but not installed: " + id); }
+      });
+      note("shown " + pinned.map(function (a) { return a.id; }).join(", "));
+      apps = pinned;
+      render();
+      setupColorKeys();
+      msg.textContent = pinned.length ? "" : "Keine der festgelegten Apps ist installiert.";
+      return;
+    }
+    msg.textContent = "Apps werden geladen …";
+    tizen.application.getAppsInfo(function (list) {
+      var own = tizen.application.getCurrentApplication().appInfo.id;
+      apps = list.filter(function (a) { return launchable(a, own); });
+      apps.sort(function (a, b) { return a.name.localeCompare(b.name); });
+      note("apps read " + list.length + ", shown " + apps.map(function (a) { return a.id; }).join(", "));
+      render();
+      msg.textContent = apps.length ? "" :
+        "Keine passenden Apps gefunden (" + list.length + " Einträge gelesen).";
+    }, function (e) {
+      note("getAppsInfo failed: " + e.message);
+      document.getElementById("msg").textContent = "App-Liste nicht lesbar: " + e.message;
+    });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    note("keydown " + e.keyCode + (e.repeat ? " repeat" : ""));
+    if (e.keyCode === 13) { enterArmed = !e.repeat; return; }
+    for (var i = 0; i < COLOR_KEYS.length; i++) {
+      if (e.keyCode === COLOR_KEYS[i].code && !e.repeat) {
+        if (PINNED[i] && apps.some(function (a) { return a.id === PINNED[i]; })) launchId(PINNED[i]);
+        return;
+      }
+    }
+    switch (e.keyCode) {
+      case 37: setFocus(focus - 1); break;            // left
+      case 39: setFocus(focus + 1); break;            // right
+      case 38: setFocus(focus - PER_ROW); break;      // up
+      case 40: setFocus(focus + PER_ROW); break;      // down
+      case 10009: tizen.application.getCurrentApplication().exit(); break; // Back
+    }
+  });
+
+  document.addEventListener("keyup", function (e) {
+    if (e.keyCode !== 13) return;
+    note("keyup 13" + (enterArmed ? "" : " ignored (no keydown here)"));
+    if (enterArmed) launch();
+    enterArmed = false;
+  });
+
+  // Launching another app terminates HomeShelf on this TV (measured), so this
+  // only covers an overlay hiding the page: refresh and drop a half-seen OK.
+  document.addEventListener("visibilitychange", function () {
+    note("visible " + !document.hidden);
+    enterArmed = false;
+    if (!document.hidden) {
+      tick();
+      load();
+    }
+  });
+
+  // Preview tile clicked while HomeShelf is running (eden_resume, no reload).
+  window.addEventListener("appcontrol", handleAppControl);
+
+  tick();
+  setInterval(tick, 10000);
+  load();
+  if (typeof tizen !== "undefined") {
+    if (SHOW_INPUTS) {
+      showLive();
+      loadSources();
+    }
+    handleAppControl();
+  }
+})();
+</script>
+</body>
+</html>

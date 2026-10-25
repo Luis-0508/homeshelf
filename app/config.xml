@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://localhost/HomeShelf" version="0.2.4" viewmodes="maximized">
+    <tizen:application id="HmShlf0001.HomeShelf" package="HmShlf0001" required_version="4.0"/>
+    <content src="index.html"/>
+    <!-- eden_resume delivers app control (e.g. a preview PAYLOAD) to a running
+         HomeShelf without reloading it. The Smart Hub Public Preview metadata
+         (use.preview) was removed in 0.1.4: this TV never requested the JSON
+         (see docs/PLATFORM.md). -->
+    <tizen:app-control>
+        <tizen:src name="index.html" reload="disable"/>
+        <tizen:operation name="http://samsung.com/appcontrol/operation/eden_resume"/>
+    </tizen:app-control>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <icon src="icon.png"/>
+    <name>HomeShelf</name>
+    <tizen:privilege name="http://tizen.org/privilege/application.info"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.window"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+</widget>
