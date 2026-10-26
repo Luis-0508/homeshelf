@@ -4,9 +4,8 @@ Narrative snapshot of where HomeShelf stands. **The repository is
 authoritative:** if git, the code, the task board or GitHub disagree with this
 file, trust them and correct this file.
 
-- Last updated: 2026-10-25
-- Verified against: `main` at `2a3b533` (template) plus the initial import in
-  the `chore/init-project` pull request
+- Last updated: 2026-10-26
+- Verified against: `main` at `804e03a`
 
 ## What exists
 
@@ -29,12 +28,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for how it fits together and
 
 ## Active work
 
-- Initial import pull request (`chore/init-project`), open for review.
+- None. The initial import (#1) is merged and the repository is public.
 
 ## Blockers
 
-- None for the code. Making the repository public waits for the maintainer's
-  merge and confirmation that CodeRabbit is active (`AGENTS.md` checklist).
+- None.
 
 ## Next priorities
 
