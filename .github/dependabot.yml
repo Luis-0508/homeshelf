@@ -1,7 +1,7 @@
 # Keep GitHub Actions updates active for every repository.
 # Add one update block per project package ecosystem (npm, pip, gomod, docker, etc.)
 # as soon as that ecosystem is introduced. Use the same 7-day cron pattern and
-# open-pull-requests-limit: 100 so updates remain visible.
+# open-pull-requests-limit: 10 so updates remain visible.
 version: 2
 
 updates:
@@ -11,7 +11,13 @@ updates:
       interval: cron
       cronjob: "0 6 * * *"
       timezone: Europe/Berlin
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - patch
     commit-message:
       prefix: ci
 
@@ -21,6 +27,12 @@ updates:
       interval: cron
       cronjob: "0 6 * * *"
       timezone: Europe/Berlin
-    open-pull-requests-limit: 100
+    open-pull-requests-limit: 10
+    groups:
+      patch-updates:
+        patterns:
+          - "*"
+        update-types:
+          - patch
     commit-message:
       prefix: deps
