@@ -29,6 +29,9 @@ jobs:
       - name: Check app script syntax
         run: node scripts/check-app.mjs app/index.html
 
+      - name: Build browser preview
+        run: node scripts/preview/build.mjs
+
       - name: Check config.xml is well-formed
         run: python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/config.xml')"
 

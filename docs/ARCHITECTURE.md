@@ -22,6 +22,7 @@ them.
 | `tools/tv_inspect.py` | DevTools `Runtime.evaluate` and console capture | inspector port from `sdb shell 0 debug` |
 | `tools/tv_control.py` | remote keys, app list/status/launch | Samsung WebSocket API (8002) and REST (8001) via `samsungtvws` |
 | `tools/discover.py` | read-only SSDP and REST discovery | LAN |
+| `scripts/preview/` | browser preview: `build.mjs` injects `tizen-mock.js` into a copy of `app/index.html` under `dist/preview/` | desktop browser only |
 
 ## Data flow
 
@@ -53,7 +54,10 @@ them.
 ## Testing
 
 There is no TV emulator in CI. `.github/workflows/ci.yml` byte-compiles the
-Python tools and syntax-checks the app script with Node. Behaviour is verified
+Python tools, syntax-checks the app script with Node and builds the browser
+preview. The preview (`scripts/preview/`) runs the real app code against a
+mock of the few Tizen calls it uses; it is for layout and screenshots
+(`docs/images/`), not proof of TV behaviour. Behaviour is verified
 on a real TV with `tools/tv_inspect.py` and `tools/tv_control.py` (see
 [INSTALL.md](INSTALL.md)); findings go into [PLATFORM.md](PLATFORM.md).
 

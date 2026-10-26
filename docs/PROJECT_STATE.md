@@ -19,6 +19,8 @@ file, trust them and correct this file.
   never appeared on the reference TV, so no `use.preview` metadata is set.
 - Tools: `tv_inspect.py` (DevTools evaluate/console), `tv_control.py`
   (remote keys, app list/status/launch), `discover.py` (read-only discovery).
+- Browser preview with simulated Tizen APIs (`scripts/preview/`) and the
+  README screenshots rendered from it (`docs/images/`).
 - Measured platform limits (`PLATFORM.md`) and the Home-replacement study
   (`HOME_REPLACEMENT.md`).
 
@@ -32,19 +34,20 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for how it fits together and
 ## Blockers
 
 - None for the code. Making the repository public waits for the maintainer's
-  merge and a real screenshot (the TV's DevTools cannot capture the page).
+  merge and confirmation that CodeRabbit is active (`AGENTS.md` checklist).
 
 ## Next priorities
 
 1. No board tickets yet. Candidate work, once the maintainer plans it:
-   real photo of the TV screen for the README; record the result of the
-   *Autorun Last App* test from `HOME_REPLACEMENT.md`.
+   record the result of the *Autorun Last App* test from
+   `HOME_REPLACEMENT.md`; optionally a photo of the real TV screen.
 
 ## Known limitations
 
 - Only one TV model verified; package ID `HmShlf0001` and `PINNED` are tuned
   to it.
-- No automated behaviour tests: CI checks syntax only; behaviour is verified
-  on the device.
+- No automated behaviour tests: CI checks syntax and builds the preview;
+  behaviour is verified on the device. Screenshots are browser renders, not
+  TV captures (no app icons, different font).
 - Replacing the Home button is not possible with documented means on Tizen 4.0
   (see `HOME_REPLACEMENT.md`).

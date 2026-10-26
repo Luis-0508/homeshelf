@@ -9,8 +9,9 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES5-f7df1e?logo=javascript&logoColor=black)](app/index.html)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-4d6b2f)](LICENSE)
 
-<!-- No screenshot yet: the TV's DevTools endpoint cannot capture the page, and
-photos of the screen are still to be taken. Add a real one as docs/images/hero.webp. -->
+<img src="docs/images/home.png" alt="HomeShelf start screen: clock, date, four app tiles and the colour-key legend" width="900">
+
+<sub>Browser preview of the real app code with the Tizen APIs simulated (<code>scripts/preview/</code>).</sub>
 
 </div>
 
@@ -48,6 +49,23 @@ JavaScript inside the running app over the DevTools protocol;
 through Samsung's local network API; [`tools/discover.py`](tools/discover.py)
 finds the TV read-only.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/home.png" alt="Start screen with the first tile focused"></td>
+    <td width="50%"><img src="docs/images/focus-netflix.png" alt="Start screen with the Netflix tile focused"></td>
+  </tr>
+  <tr>
+    <td><b>Start.</b> Clock, date, the pinned apps and the colour-key legend. The first tile has focus on a fresh install.</td>
+    <td><b>Coming back.</b> HomeShelf restarts after every app and restores the tile you used last, here Netflix.</td>
+  </tr>
+</table>
+
+Both images are browser renders of `app/index.html` at 1920×1080 with the Tizen
+APIs simulated, because the TV's DevTools endpoint cannot capture the page. On
+the TV the tiles show each app's own icon and the font is Samsung's system font.
+
 ## Quick start
 
 ```bash
@@ -70,11 +88,16 @@ python -I tools/tv_inspect.py --port <port> "window.__homeshelfLog"
 The web engine is Chromium M56: write ES5 and plain CSS. CI checks the Python
 tools and the app script's syntax; app behaviour is verified on a real TV.
 
+Without a TV, `node scripts/preview/build.mjs` writes `dist/preview/index.html`:
+the app with simulated Tizen APIs, to open in a desktop browser at 1920×1080
+(arrow keys and Enter work; launches are logged to the console).
+
 ## Architecture
 
 ```text
 app/     Tizen web app (config.xml, index.html, icon.png)
 tools/   Python helpers for SDB/DevTools inspection and remote control
+scripts/ CI syntax check and the browser preview with simulated Tizen APIs
 docs/    Platform measurements, Home-replacement study, install guide
 ```
 
