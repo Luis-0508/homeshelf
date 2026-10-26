@@ -9,6 +9,8 @@ the table.
 
 | # | Decision | Status |
 |---|---|---|
+| [0001](0001-plain-es5-tizen-web-app.md) | Plain ES5 Tizen web app without a framework or build step | Accepted |
+| [0002](0002-pin-apps-by-tizen-id.md) | Pin apps by Tizen app ID | Accepted |
 
 ## Template
 

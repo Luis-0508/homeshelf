@@ -1,9 +1,8 @@
 source:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/**'
           - 'app/**'
-          - 'lib/**'
+          - 'tools/**/*.py'
 
 tests:
   - changed-files:
