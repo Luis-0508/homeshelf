@@ -1,7 +1,7 @@
 # Project state
 
 Narrative snapshot of where HomeShelf stands. **The repository is
-authoritative:** if git, the code, the task board or GitHub disagree with this
+authoritative:** if git, the code or GitHub issues disagree with this
 file, trust them and correct this file.
 
 - Last updated: 2026-10-26
@@ -36,7 +36,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for how it fits together and
 
 ## Next priorities
 
-1. No board tickets yet. Candidate work, once the maintainer plans it:
+1. No issues planned yet. Candidate work, once the maintainer plans it:
    record the result of the *Autorun Last App* test from
    `HOME_REPLACEMENT.md`; optionally a photo of the real TV screen.
 
